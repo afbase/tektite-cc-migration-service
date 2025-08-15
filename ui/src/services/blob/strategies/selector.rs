@@ -10,7 +10,8 @@ use super::{
     MigrationStrategy, 
     ConcurrentStrategy, 
     StorageStrategy, 
-    StreamingStrategy
+    StreamingStrategy,
+    PooledStreamingStrategy
 };
 
 /// Selector for choosing the optimal migration strategy
@@ -74,6 +75,12 @@ impl StrategySelector {
             candidates.push(storage_direct);
         }
         
+        // Pooled streaming strategy (high performance concurrent streaming)
+        let pooled_streaming = Box::new(PooledStreamingStrategy::with_default_pool());
+        if pooled_streaming.supports_blob_count(blob_count) && pooled_streaming.supports_storage_backend(backend_name) {
+            candidates.push(pooled_streaming);
+        }
+        
         // Streaming strategy (always available as fallback)
         candidates.push(Box::new(StreamingStrategy::new()));
         
@@ -133,6 +140,18 @@ impl StrategySelector {
                     score += 12;
                 }
             }
+            "pooled_streaming" => {
+                // Always prioritize pooled streaming strategy
+                score += 100;
+                // Additional bonus for high blob count scenarios
+                if blob_count >= 10 {
+                    score += 20;
+                }
+                // Bonus for reasonable memory availability (needs at least 20MB for pool)
+                if available_memory.map_or(true, |mem| mem >= 20 * 1024 * 1024) {
+                    score += 15;
+                }
+            }
             _ => {}
         }
         
@@ -141,6 +160,6 @@ impl StrategySelector {
     
     /// Get a fallback strategy that should always work
     pub fn get_fallback_strategy() -> Box<dyn MigrationStrategy> {
-        Box::new(StreamingStrategy::new())
+        Box::new(PooledStreamingStrategy::with_default_pool())
     }
 }

@@ -247,11 +247,17 @@ mod tests {
         let resolver = DnsOverHttpsResolver::new();
         
         // First call should hit network
+        #[cfg(target_arch = "wasm32")]
+        let start = web_time::Instant::now();
+        #[cfg(not(target_arch = "wasm32"))]
         let start = std::time::Instant::now();
         let result1 = resolver.resolve_txt("_atproto.rudyfraser.com").await.unwrap();
         let first_duration = start.elapsed();
         
         // Second call should hit cache
+        #[cfg(target_arch = "wasm32")]
+        let start = web_time::Instant::now();
+        #[cfg(not(target_arch = "wasm32"))]
         let start = std::time::Instant::now();
         let result2 = resolver.resolve_txt("_atproto.rudyfraser.com").await.unwrap();
         let second_duration = start.elapsed();

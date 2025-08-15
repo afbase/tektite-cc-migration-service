@@ -1,6 +1,12 @@
 //! Migration metrics collection and analysis
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+// Time imports for WASM vs native compatibility
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 
 /// Collects and analyzes migration performance metrics
 #[derive(Debug, Clone)]
